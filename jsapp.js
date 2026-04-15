@@ -6,6 +6,8 @@
     session: "tas_session_v1",
     visits: "tas_visits_v1",
     expenses: "tas_expenses_v1",
+    prospects: "tas_prospects_v1",
+    assignments: "tas_assignments_v1",
   };
 
   const TOLERANCE_M = 150;
@@ -16,6 +18,13 @@
     { id: "a3", name: "Coastal Holidays", city: "Goa", contact: "S. D'Souza", phone: "+91 98xxx 10003", category: "prospect", temp: "warm", lat: 15.4986, lng: 73.9108 },
     { id: "a4", name: "Royal Wings", city: "Delhi", contact: "K. Singh", phone: "+91 98xxx 10004", category: "inactive", temp: "cold", lat: 28.6139, lng: 77.209 },
     { id: "a5", name: "Golden Route Agencies", city: "Bengaluru", contact: "P. Nair", phone: "+91 98xxx 10005", category: "active", temp: "hot", lat: 12.9716, lng: 77.5946 },
+  ];
+
+  const STAFF = [
+    { id: "s1", name: "Riya Sharma", role: "executive" },
+    { id: "s2", name: "A. Khan", role: "executive" },
+    { id: "s3", name: "S. Patel", role: "executive" },
+    { id: "s4", name: "M. Das", role: "executive" },
   ];
 
   function haversineM(lat1, lng1, lat2, lng2) {
@@ -67,6 +76,31 @@
     saveJSON(STORAGE.expenses, list);
   }
 
+  function getProspects() {
+    return loadJSON(STORAGE.prospects, []);
+  }
+
+  function saveProspects(list) {
+    saveJSON(STORAGE.prospects, list);
+  }
+
+  function getAssignments() {
+    return loadJSON(STORAGE.assignments, []);
+  }
+
+  function saveAssignments(list) {
+    saveJSON(STORAGE.assignments, list);
+  }
+
+  function isAdmin() {
+    return getSession()?.role === "admin";
+  }
+
+  function canManageTeam() {
+    const role = getSession()?.role;
+    return role === "admin" || role === "manager";
+  }
+
   function getStaffNameForVisit(visit, idx) {
     const names = ["Riya Sharma", "A. Khan", "S. Patel", "M. Das"];
     if (visit && visit.staffName) return visit.staffName;
@@ -84,6 +118,8 @@
     more: document.getElementById("screen-more"),
     expenses: document.getElementById("screen-expenses"),
     expenseNew: document.getElementById("screen-expense-new"),
+    prospects: document.getElementById("screen-prospects"),
+    manager: document.getElementById("screen-manager"),
     admin: document.getElementById("screen-admin"),
   };
 
@@ -102,8 +138,7 @@
       if (screens[k]) screens[k].classList.toggle("active", k === name);
     });
 
-    const mainTabs = ["home", "map", "visits", "more"];
-    const hideNav = ["login", "visitNew", "visitDetail", "expenseNew", "admin"];
+    const hideNav = ["login", "visitNew", "visitDetail", "expenseNew", "prospects", "manager", "admin"];
     bottomNav.classList.toggle("hidden", hideNav.includes(name));
     fabWrap.classList.toggle("hidden", name !== "home" && name !== "visits");
 
@@ -117,6 +152,8 @@
     if (name === "more") renderMore();
     if (name === "expenses") renderExpenses();
     if (name === "expenseNew") renderExpenseNew();
+    if (name === "prospects") renderProspects();
+    if (name === "manager") renderManager();
     if (name === "admin") renderAdmin();
   }
 
@@ -158,9 +195,21 @@
       showScreen("expenses");
       return;
     }
+    if (a === "prospects") {
+      showScreen("prospects");
+      return;
+    }
+    if (a === "manager") {
+      if (!canManageTeam()) {
+        navigate("/home");
+        return;
+      }
+      showScreen("manager");
+      return;
+    }
     if (a === "admin") {
-      if (sess.role !== "admin") {
-        navigate("/");
+      if (!isAdmin()) {
+        navigate("/home");
         return;
       }
       showScreen("admin");
@@ -178,8 +227,14 @@
     const today = new Date().toDateString();
     const todayVisits = visits.filter((v) => new Date(v.ts).toDateString() === today);
 
-    document.getElementById("home-greeting").textContent =
-      getSession().role === "admin" ? "Admin overview" : `Good day, ${getSession().name}`;
+    const sess = getSession();
+    const greeting =
+      sess.role === "admin"
+        ? "Admin overview"
+        : sess.role === "manager"
+          ? "Manager overview"
+          : `Good day, ${sess.name}`;
+    document.getElementById("home-greeting").textContent = greeting;
 
     const pulse = document.getElementById("home-pulse");
     pulse.innerHTML = `
@@ -360,12 +415,17 @@
   /* --- Expenses --- */
   function renderExpenses() {
     const box = document.getElementById("expenses-list");
+    const sess = getSession();
     const ex = getExpenses().sort((x, y) => new Date(y.ts) - new Date(x.ts));
     if (!ex.length) {
       box.innerHTML = `<div class="empty">No expenses. Add a bill photo entry.</div>`;
       return;
     }
-    box.innerHTML = ex
+    box.innerHTML =
+      (sess.role !== "admin"
+        ? `<div class="card"><p class="meta" style="margin:0">Expense approval is restricted to Admin (Head Office).</p></div>`
+        : "") +
+      ex
       .map(
         (e) => `
       <div class="card">
@@ -397,10 +457,133 @@
     const sess = getSession();
     document.getElementById("more-profile").textContent = `${sess.name} · ${sess.phone}`;
     document.getElementById("more-role").textContent = sess.role;
-    document.getElementById("more-admin").classList.toggle("hidden", sess.role !== "admin");
+    document.getElementById("more-admin").classList.toggle("hidden", !isAdmin());
+    document.getElementById("more-manager").classList.toggle("hidden", !canManageTeam());
+    document.getElementById("more-prospects").classList.toggle("hidden", !["admin", "manager", "executive"].includes(sess.role));
+  }
+
+  function renderProspects() {
+    const prospects = getProspects().sort((x, y) => new Date(y.ts) - new Date(x.ts));
+    const box = document.getElementById("pro-list");
+    box.innerHTML =
+      prospects.length === 0
+        ? `<div class="admin-empty">No prospects added yet.</div>`
+        : prospects
+            .map(
+              (p) => `
+          <div class="card">
+            <div class="row-between">
+              <div>
+                <h3>${escapeHtml(p.name)}</h3>
+                <p class="meta">${escapeHtml(p.city)} · by ${escapeHtml(p.createdBy)}</p>
+              </div>
+              <span class="tag ${p.temp}">${escapeHtml(p.temp)}</span>
+            </div>
+          </div>`
+            )
+            .join("");
+  }
+
+  function renderManager() {
+    const staffSel = document.getElementById("mgr-staff");
+    const agencySel = document.getElementById("mgr-agency");
+    if (!staffSel || !agencySel) return;
+
+    staffSel.innerHTML = STAFF.map(
+      (s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`
+    ).join("");
+    agencySel.innerHTML = AGENCIES.map(
+      (a) => `<option value="${a.id}">${escapeHtml(a.name)} (${escapeHtml(a.city)})</option>`
+    ).join("");
+
+    const assignments = getAssignments();
+    const assignmentBox = document.getElementById("mgr-assignments");
+    assignmentBox.innerHTML =
+      assignments.length === 0
+        ? `<div class="admin-empty">No agency assignments yet.</div>`
+        : assignments
+            .map((as) => {
+              const staff = STAFF.find((s) => s.id === as.staffId);
+              const ag = AGENCIES.find((a) => a.id === as.agencyId);
+              return `
+                <div class="card">
+                  <div class="adm-row">
+                    <div class="adm-staff">${escapeHtml(staff?.name || "Unknown")}</div>
+                    <span class="tag pending">assigned</span>
+                  </div>
+                  <div class="adm-sub">${escapeHtml(ag?.name || "Unknown agency")} · ${formatDate(as.ts)}</div>
+                </div>`;
+            })
+            .join("");
+
+    const visits = getVisits();
+    const perf = {};
+    STAFF.forEach((s) => {
+      perf[s.name] = { visits: 0, verified: 0 };
+    });
+    visits.forEach((v, idx) => {
+      const name = getStaffNameForVisit(v, idx);
+      if (!perf[name]) perf[name] = { visits: 0, verified: 0 };
+      perf[name].visits += 1;
+      if (v.verification === "verified") perf[name].verified += 1;
+    });
+    const perfRows = Object.entries(perf).sort((a, b) => b[1].visits - a[1].visits);
+    document.getElementById("mgr-performance").innerHTML =
+      perfRows.length === 0
+        ? `<div class="admin-empty">No team activity yet.</div>`
+        : perfRows
+            .map(([name, p]) => {
+              const score = p.visits ? Math.round((p.verified / p.visits) * 100) : 0;
+              return `
+                <div class="card">
+                  <div class="adm-row">
+                    <div class="adm-staff">${escapeHtml(name)}</div>
+                    <div class="adm-sub">${p.visits} visits · ${score}% verified</div>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill" style="width:${score}%"></div></div>
+                </div>`;
+            })
+            .join("");
+
+    const reviewable = visits.filter((v) => !v.reviewedByManager);
+    const reviewBox = document.getElementById("mgr-review");
+    reviewBox.innerHTML =
+      reviewable.length === 0
+        ? `<div class="admin-empty">No pending visit reviews.</div>`
+        : reviewable
+            .slice(0, 8)
+            .map(
+              (v) => `
+                <div class="card">
+                  <div class="adm-row">
+                    <div>
+                      <div class="adm-staff">${escapeHtml(v.agencyName)}</div>
+                      <div class="adm-sub">${formatDate(v.ts)} · ${escapeHtml(v.staffName || "Executive")}</div>
+                    </div>
+                    <span class="tag ${v.verification === "verified" ? "ok" : v.verification === "mismatch" ? "bad" : "pending"}">${v.verification}</span>
+                  </div>
+                  <div class="inline-actions">
+                    <button type="button" class="btn btn-secondary" data-review-visit="${v.id}">Mark reviewed</button>
+                  </div>
+                </div>`
+            )
+            .join("");
+
+    reviewBox.querySelectorAll("[data-review-visit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!canManageTeam()) return;
+        const id = btn.dataset.reviewVisit;
+        const next = getVisits().map((v) =>
+          v.id === id ? { ...v, reviewedByManager: true, reviewedAt: new Date().toISOString() } : v
+        );
+        saveVisits(next);
+        renderManager();
+      });
+    });
   }
 
   function renderAdmin() {
+    if (!isAdmin()) return;
     const statusFilter = document.getElementById("adm-filter-status")?.value || "all";
     const windowFilter = Number(document.getElementById("adm-filter-window")?.value || "7");
     const allVisits = getVisits().sort((x, y) => new Date(y.ts) - new Date(x.ts));
@@ -517,6 +700,10 @@
 
     review.querySelectorAll("button[data-exp-id]").forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (!isAdmin()) {
+          alert("Only Admin can approve or reject expenses.");
+          return;
+        }
         const action = btn.dataset.expAct;
         const id = btn.dataset.expId;
         const next = getExpenses().map((e) =>
@@ -554,7 +741,7 @@
     otpSent = true;
     document.getElementById("otp-block").classList.remove("hidden");
     document.getElementById("login-hint").textContent =
-      "Demo: use OTP 123456. Phone ending in 1 = admin.";
+      "Demo: use OTP 123456. Phone ending 1 = admin, 2 = manager.";
   });
 
   document.getElementById("btn-verify").addEventListener("click", () => {
@@ -569,10 +756,12 @@
       return;
     }
     const isAdmin = phone.endsWith("1") || phone.includes("999");
+    const isManager = !isAdmin && (phone.endsWith("2") || phone.includes("888"));
+    const role = isAdmin ? "admin" : isManager ? "manager" : "executive";
     setSession({
       phone,
-      name: isAdmin ? "Head Office Admin" : "Riya Sharma",
-      role: isAdmin ? "admin" : "executive",
+      name: isAdmin ? "Head Office Admin" : isManager ? "Sales Manager" : "Riya Sharma",
+      role,
     });
     navigate("/home");
   });
@@ -629,6 +818,7 @@
 
       const visit = {
         id: crypto.randomUUID(),
+        staffName: getSession().name,
         agencyId,
         agencyName: ag?.name || "Unknown",
         visitType: document.getElementById("vn-type").value,
@@ -709,9 +899,62 @@
   document.getElementById("vd-back").addEventListener("click", () => navigate("/visits"));
 
   document.getElementById("more-expenses").addEventListener("click", () => navigate("/expenses"));
+  document.getElementById("more-prospects").addEventListener("click", () => navigate("/prospects"));
+  document.getElementById("more-manager").addEventListener("click", () => navigate("/manager"));
   document.getElementById("more-admin").addEventListener("click", () => navigate("/admin"));
   document.getElementById("more-offline").addEventListener("click", () => {
     alert("Demo: offline queue would sync when online.");
+  });
+
+  document.getElementById("pro-back").addEventListener("click", () => navigate("/more"));
+  document.getElementById("pro-save").addEventListener("click", () => {
+    const sess = getSession();
+    if (!["admin", "manager", "executive"].includes(sess.role)) {
+      alert("You do not have permission to add prospects.");
+      return;
+    }
+    const name = document.getElementById("pro-name").value.trim();
+    const city = document.getElementById("pro-city").value.trim();
+    const temp = document.getElementById("pro-temp").value;
+    if (!name || !city) {
+      alert("Enter name and city.");
+      return;
+    }
+    const list = getProspects();
+    list.unshift({
+      id: crypto.randomUUID(),
+      name,
+      city,
+      temp,
+      createdBy: sess.name,
+      ts: new Date().toISOString(),
+    });
+    saveProspects(list);
+    document.getElementById("pro-name").value = "";
+    document.getElementById("pro-city").value = "";
+    document.getElementById("pro-temp").value = "warm";
+    renderProspects();
+  });
+
+  document.getElementById("mgr-back").addEventListener("click", () => navigate("/more"));
+  document.getElementById("mgr-assign").addEventListener("click", () => {
+    if (!canManageTeam()) {
+      alert("Only manager/admin can assign agencies.");
+      return;
+    }
+    const staffId = document.getElementById("mgr-staff").value;
+    const agencyId = document.getElementById("mgr-agency").value;
+    const list = getAssignments();
+    const updated = list.filter((x) => !(x.staffId === staffId && x.agencyId === agencyId));
+    updated.unshift({
+      id: crypto.randomUUID(),
+      staffId,
+      agencyId,
+      createdBy: getSession().name,
+      ts: new Date().toISOString(),
+    });
+    saveAssignments(updated);
+    renderManager();
   });
 
   document.getElementById("exp-back").addEventListener("click", () => navigate("/more"));
