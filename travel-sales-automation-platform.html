@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Travel Agency Sales Automation — Architecture & UI Kit</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --border: #2d3a4f;
+      --text: #e8eef7;
+      --muted: #8b9cb3;
+      --accent: #3d9cf5;
+      --accent2: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --phone-w: 320px;
+      --radius: 12px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.hero {
+      background: linear-gradient(145deg, #152238 0%, #0f1419 50%, #0d1829 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 1.25rem 2.5rem;
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(61, 156, 245, 0.4);
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; margin: 0 0 0.5rem; line-height:1.2; }
+    .subtitle { color: var(--muted); max-width: 42rem; margin: 0; }
+    .tagline {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--accent2);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    nav.toc {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 20, 25, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .toc-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0.5rem 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.75rem;
+      align-items: center;
+    }
+    .toc-inner a {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+    }
+    .toc-inner a:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    section { margin-bottom: 3.5rem; scroll-margin-top: 3rem; }
+    h2 {
+      font-size: 1.35rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin: 0 0 1.25rem;
+    }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.75rem; color: #c5d4e8; }
+    p { margin: 0 0 1rem; color: var(--muted); }
+
+    .grid-2 {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+    .card h4 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+
+    .diagram-wrap {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    .diagram-wrap .mermaid { display: flex; justify-content: center; }
+
+    table.schema {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 0.75rem 0 1.5rem;
+    }
+    table.schema th, table.schema td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.schema th { background: var(--surface2); color: #b8c8dc; }
+    table.schema code { font-size: 12px; color: var(--accent); }
+
+    .pill {
+      display: inline-block;
+      font-size: 11px;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: var(--surface2);
+      color: var(--muted);
+    }
+    .pill.ok { background: rgba(34, 197, 94, 0.15); color: var(--accent2); }
+    .pill.bad { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+    /* Phone wireframe */
+    .phones-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      justify-content: center;
+      margin: 1.5rem 0;
+    }
+    .phone {
+      width: var(--phone-w);
+      flex-shrink: 0;
+      background: #111820;
+      border-radius: 28px;
+      border: 3px solid #2a3548;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+      overflow: hidden;
+    }
+    .phone-notch {
+      height: 22px;
+      background: #111820;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .phone-notch span {
+      width: 80px;
+      height: 18px;
+      background: #0a0e14;
+      border-radius: 0 0 12px 12px;
+    }
+    .phone-screen {
+      background: linear-gradient(180deg, #f4f6fa 0%, #e8ecf2 100%);
+      color: #1a2332;
+      min-height: 520px;
+      padding: 10px 12px 16px;
+      font-size: 12px;
+    }
+    .phone-label {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      max-width: var(--phone-w);
+    }
+    .wf-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .wf-title { font-weight: 700; font-size: 14px; }
+    .wf-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.9;
+    }
+    .wf-search {
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #64748b;
+      margin-bottom: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .wf-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .wf-card strong { display: block; margin-bottom: 4px; }
+    .wf-row { display: flex; justify-content: space-between; align-items: center; }
+    .wf-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .wf-tag.hot { background: #fee2e2; color: #b91c1c; }
+    .wf-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: #2563eb;
+      color: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-top: 8px;
+      border: none;
+      font-size: 12px;
+    }
+    .wf-nav {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 10px;
+      color: #64748b;
+    }
+    .wf-nav span { text-align: center; }
+    .wf-nav .active { color: #2563eb; font-weight: 700; }
+    .wf-map {
+      height: 120px;
+      background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 50%, #60a5fa 100%);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    .wf-pin {
+      position: absolute;
+      top: 45%; left: 55%;
+      width: 12px; height: 12px;
+      background: #ef4444;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .wf-proof {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .wf-thumb {
+      flex: 1;
+      height: 56px;
+      background: #cbd5e1;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .wf-verified {
+      font-size: 10px;
+      color: #15803d;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .wf-mismatch {
+      font-size: 10px;
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    /* Admin dashboard desktop mock */
+    .admin-frame {
+      background: #0c1220;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+    .admin-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .admin-body {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      min-height: 380px;
+    }
+    @media (max-width: 700px) {
+      .admin-body { grid-template-columns: 1fr; }
+      .admin-side { display: none; }
+    }
+    .admin-side {
+      background: #141c2c;
+      padding: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      border-right: 1px solid var(--border);
+    }
+    .admin-side div { padding: 8px 10px; border-radius: 6px; margin-bottom: 4px; }
+    .admin-side .on { background: rgba(61, 156, 245, 0.15); color: var(--accent); }
+    .admin-main { padding: 14px; }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .kpi b { display: block; font-size: 1.25rem; color: var(--text); }
+    .kpi small { color: var(--muted); font-size: 11px; }
+    .admin-table {
+      width: 100%;
+      font-size: 11px;
+      border-collapse: collapse;
+    }
+    .admin-table th, .admin-table td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 6px;
+      text-align: left;
+    }
+    .admin-table th { color: var(--muted); font-weight: 600; }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <span class="badge">Internal field-force CRM</span>
+      <h1>Travel Agency Sales Automation Platform</h1>
+      <p class="subtitle">Complete architecture, schema, APIs, wireframes, workflows, admin dashboard concept, and mobile navigation — in one lightweight HTML kit. Optimized for Android-first field staff with passwordless OTP, geo-verified visits, and offline sync.</p>
+      <p class="tagline">Lightweight like a field-force app; structured like enterprise CRM (Salesforce / Zoho patterns) for travel agency B2B sales.</p>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Table of contents">
+    <div class="toc-inner">
+      <a href="#architecture">Architecture</a>
+      <a href="#schema">Database</a>
+      <a href="#api">APIs</a>
+      <a href="#geo">Geo validation</a>
+      <a href="#workflows">Workflows</a>
+      <a href="#wireframes">Mobile wireframes</a>
+      <a href="#admin">Admin dashboard</a>
+      <a href="#navigation">App navigation</a>
+      <a href="#offline">Offline &amp; sync</a>
+    </div>
+  </nav>
+
+  <main>
+    <section id="architecture">
+      <h2>1. Product architecture</h2>
+      <p>Three-tier design: mobile clients (PWA / native), API gateway with RBAC, event-driven sync for offline queues. Media goes to object storage with signed URLs; location proofs are validated server-side against agency coordinates.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Client layer</h4>
+          <p style="margin:0">Android-first app (Kotlin) or Capacitor PWA. Local SQLite/Realm for offline. Camera + EXIF strip + GPS from fused location provider.</p>
+        </div>
+        <div class="card">
+          <h4>Services</h4>
+          <p style="margin:0">Auth (OTP), Users/Roles, Agencies, Visits, Expenses, Tasks, Notifications, Analytics jobs, Geo service (Haversine), Media ingest, Audit log.</p>
+        </div>
+        <div class="card">
+          <h4>Data</h4>
+          <p style="margin:0">PostgreSQL (OLTP), Redis (sessions/rate limits), S3-compatible storage, optional ClickHouse/BigQuery for analytics.</p>
+        </div>
+        <div class="card">
+          <h4>Integrations</h4>
+          <p style="margin:0">Maps (navigation deep links), WhatsApp Business API, future CRM webhooks, accounting export (CSV/Excel).</p>
+        </div>
+      </div>
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+flowchart TB
+  subgraph Mobile["Mobile / PWA"]
+    UI[Sales UI]
+    OFF[Offline Store]
+    UI <--> OFF
+  end
+  subgraph Edge["API &amp; Realtime"]
+    GW[API Gateway + JWT]
+    WS[WebSocket / SSE]
+  end
+  subgraph Core["Core Services"]
+    AUTH[OTP &amp; Device Bind]
+    CRM[Agencies &amp; Prospects]
+    VIS[Visits &amp; Geo Verify]
+    EXP[Expenses &amp; Approvals]
+    TSK[Tasks &amp; Routes]
+    NOTIF[Push &amp; Scheduler]
+  end
+  subgraph Data["Data Plane"]
+    PG[(PostgreSQL)]
+    RD[(Redis)]
+    S3[(Object Storage)]
+  end
+  Mobile --> GW
+  GW --> AUTH
+  GW --> CRM
+  GW --> VIS
+  GW --> EXP
+  GW --> TSK
+  GW --> NOTIF
+  AUTH --> PG
+  CRM --> PG
+  VIS --> PG
+  VIS --> S3
+  EXP --> S3
+  TSK --> PG
+  NOTIF --> RD
+        </pre>
+      </div>
+    </section>
+
+    <section id="schema">
+      <h2>2. Database schema (logical)</h2>
+      <p>UUID primary keys recommended. PostGIS optional for territory polygons; Haversine in app layer is enough for radius checks at moderate scale.</p>
+
+      <h3>organizations &amp; users</h3>
+      <table class="schema">
+        <thead><tr><th>Table</th><th>Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>organizations</code></td><td>id, name, timezone, settings_json</td><td>Head office tenant</td></tr>
+          <tr><td><code>users</code></td><td>id, org_id, phone_e164, name, role enum, manager_id, status, device_fingerprint, last_login_at</td><td>RBAC: admin, manager, executive</td></tr>
+          <tr><td><code>otp_challenges</code></td><td>id, phone, code_hash, expires_at, attempts</td><td>Rate-limited</td></tr>
+          <tr><td><code>sessions</code></td><td>id, user_id, refresh_token_hash, device_id, created_at</td><td>Passwordless sessions</td></tr>
+        </tbody>
+      </table>
+
+      <h3>agencies &amp; prospects</h3>
+      <table class="schema">
+        <thead><tr><th>Table</th><th>Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>agencies</code></td><td>id, org_id, name, contact_name, phone, email, address, city, region, gst, category enum, lat, lng, geocode_accuracy, assigned_to, lead_score, dup_of_id, created_at</td><td>Category: active/prospect/inactive</td></tr>
+          <tr><td><code>prospects</code></td><td>id, agency_id nullable, org_id, name, phone, status enum, temperature enum, source, converted_agency_id, lost_reason</td><td>Quick-add from mobile</td></tr>
+          <tr><td><code>territories</code></td><td>id, org_id, name, geom polygon optional, owner_manager_id</td><td>Territory mapping</td></tr>
+        </tbody>
+      </table>
+
+      <h3>visits, attendance, tasks</h3>
+      <table class="schema">
+        <thead><tr><th>Table</th><th>Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>visits</code></td><td>id, org_id, user_id, agency_id, type enum, purpose enum, scheduled_at, checkin_at, lat, lng, accuracy_m, selfie_media_id, notes, summary, next_followup_at, persons_met jsonb, verification enum, distance_m, client_hash offline</td><td>verification: verified / mismatch / pending</td></tr>
+          <tr><td><code>visit_attachments</code></td><td>id, visit_id, media_id, kind</td><td>Office photos</td></tr>
+          <tr><td><code>attendance_days</code></td><td>id, user_id, date, first_checkin_at, first_visit_id, last_activity_at</td><td>Implicit login + first geo event</td></tr>
+          <tr><td><code>visit_plans</code></td><td>id, manager_id, user_id, week_start, items jsonb, completion_pct</td><td>Daily/weekly plans</td></tr>
+        </tbody>
+      </table>
+
+      <h3>expenses &amp; analytics</h3>
+      <table class="schema">
+        <thead><tr><th>Table</th><th>Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>expenses</code></td><td>id, user_id, org_id, category enum, amount, currency, visit_id nullable, bill_media_id, status enum, reviewer_id, comment, submitted_at</td><td>Approval workflow</td></tr>
+          <tr><td><code>notifications</code></td><td>id, user_id, type, payload jsonb, read_at, scheduled_for</td><td>Reminders &amp; alerts</td></tr>
+          <tr><td><code>audit_logs</code></td><td>id, actor_id, action, entity, entity_id, meta jsonb, created_at</td><td>Compliance</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="api">
+      <h2>3. REST API structure (representative)</h2>
+      <p>Version prefix <code>/v1</code>. JSON bodies. Pagination: <code>cursor</code> or <code>page</code>. Errors: RFC7807-style <code>{ code, message, details }</code>.</p>
+
+      <h3>Auth (passwordless)</h3>
+      <table class="schema">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>POST</td><td><code>/v1/auth/otp/request</code></td><td>Body: phone — sends SMS OTP</td></tr>
+          <tr><td>POST</td><td><code>/v1/auth/otp/verify</code></td><td>Body: phone, otp, device_info — returns access + refresh</td></tr>
+          <tr><td>POST</td><td><code>/v1/auth/refresh</code></td><td>Rotate tokens; optional device binding</td></tr>
+          <tr><td>POST</td><td><code>/v1/auth/logout</code></td><td>Invalidate refresh</td></tr>
+        </tbody>
+      </table>
+
+      <h3>CRM &amp; field</h3>
+      <table class="schema">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>GET/POST</td><td><code>/v1/agencies</code></td><td>List (geo bbox filter) / create</td></tr>
+          <tr><td>PATCH/DELETE</td><td><code>/v1/agencies/:id</code></td><td>Update / soft-delete</td></tr>
+          <tr><td>GET</td><td><code>/v1/agencies/map</code></td><td>Clusters for map view</td></tr>
+          <tr><td>POST</td><td><code>/v1/prospects</code></td><td>Quick add from mobile</td></tr>
+          <tr><td>POST</td><td><code>/v1/visits</code></td><td>Create visit; server runs geo validation</td></tr>
+          <tr><td>POST</td><td><code>/v1/media/upload-url</code></td><td>Presigned PUT for selfie/bills</td></tr>
+          <tr><td>POST</td><td><code>/v1/sync/batch</code></td><td>Idempotent offline sync envelope</td></tr>
+          <tr><td>GET/POST</td><td><code>/v1/expenses</code></td><td>List / submit</td></tr>
+          <tr><td>PATCH</td><td><code>/v1/expenses/:id/review</code></td><td>Admin/manager approve-reject</td></tr>
+          <tr><td>GET</td><td><code>/v1/reports/visits</code></td><td>Filters: user, region, verification</td></tr>
+          <tr><td>GET</td><td><code>/v1/analytics/dashboard</code></td><td>Role-scoped KPIs</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="geo">
+      <h2>4. Geo validation logic</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Rules</h4>
+          <p style="margin:0">Compute Haversine distance between visit <code>(lat,lng)</code> and agency <code>(lat,lng)</code>. If agency has no geocode, flag <span class="pill">pending</span> until admin sets location. Tolerance default <strong>150m</strong> (configurable 100–200m).</p>
+        </div>
+        <div class="card">
+          <h4>Flags &amp; fraud signals</h4>
+          <p style="margin:0"><span class="pill ok">Visit Verified</span> distance ≤ tolerance. <span class="pill bad">Location Mismatch</span> if &gt; tolerance or accuracy &gt; threshold (e.g. 50m). Dashboard: mock GPS, impossible speed between visits, duplicate photo hash.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflows">
+      <h2>5. Workflow diagrams</h2>
+      <h3>OTP login &amp; device trust</h3>
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+sequenceDiagram
+  participant U as Field User
+  participant A as App
+  participant S as API
+  participant SMS as SMS Gateway
+  U->>A: Enter mobile number
+  A->>S: POST /auth/otp/request
+  S->>SMS: Deliver OTP
+  SMS-->>U: OTP
+  U->>A: Enter OTP
+  A->>S: POST /auth/otp/verify + device fingerprint
+  S-->>A: JWT + refresh
+  A->>A: Store tokens securely
+  Note over A,S: Subsequent launches: refresh if device bound
+        </pre>
+      </div>
+      <h3>Visit logging with proof</h3>
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+flowchart LR
+  A[Open Log Visit] --> B[Select agency or new prospect]
+  B --> C[Choose type &amp; purpose]
+  C --> D[Capture selfie + fused GPS]
+  D --> E{Online?}
+  E -- Yes --> F[Upload media presigned]
+  E -- No --> G[Queue in local DB]
+  F --> H[POST /visits]
+  G --> I[Background sync]
+  I --> H
+  H --> J[Server: distance vs agency]
+  J --> K[Verified / Mismatch]
+        </pre>
+      </div>
+      <h3>Expense approval</h3>
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Submitted: user submits
+  Submitted --> Approved: manager/admin
+  Submitted --> Rejected: with comment
+  Approved --> [*]
+  Rejected --> Draft: user edits resubmit
+        </pre>
+      </div>
+    </section>
+
+    <section id="wireframes">
+      <h2>6. Mobile UI wireframes (low-fidelity)</h2>
+      <p>Stylized HTML/CSS frames — not pixel-perfect Figma, but enough to guide implementation. Primary actions thumb-reachable; one primary CTA per screen.</p>
+
+      <div class="phones-row">
+        <div>
+          <div class="phone" aria-label="Wireframe: Home dashboard">
+            <div class="phone-notch"><span></span></div>
+            <div class="phone-screen">
+              <div class="wf-header">
+                <span class="wf-title">Good morning, Riya</span>
+                <div class="wf-avatar"></div>
+              </div>
+              <div class="wf-search">Search agencies…</div>
+              <div class="wf-card">
+                <div class="wf-row"><strong>Today</strong><span class="wf-tag">3 visits</span></div>
+                <small style="color:#64748b">2 completed · 1 pending</small>
+              </div>
+              <div class="wf-card wf-row">
+                <div><strong>Skyline Tours</strong><small style="display:block;color:#64748b">Follow-up · 11:30</small></div>
+                <span class="wf-tag hot">Hot</span>
+              </div>
+              <div class="wf-card">
+                <strong>Pending follow-ups</strong>
+                <small style="color:#64748b">Coastal Holidays — call by Apr 16</small>
+              </div>
+              <button type="button" class="wf-btn">+ Log visit</button>
+              <div class="wf-nav">
+                <span class="active">Home</span><span>Map</span><span>Visits</span><span>More</span>
+              </div>
+            </div>
+          </div>
+          <p class="phone-label">Home / daily pulse</p>
+        </div>
+
+        <div>
+          <div class="phone" aria-label="Wireframe: Map agencies">
+            <div class="phone-notch"><span></span></div>
+            <div class="phone-screen">
+              <div class="wf-header">
+                <span class="wf-title">Agencies map</span>
+                <span style="font-size:18px">☰</span>
+              </div>
+              <div class="wf-map"><div class="wf-pin"></div></div>
+              <div class="wf-card wf-row">
+                <div><strong>Pin selected</strong><small style="display:block;color:#64748b">Heritage Travels · 0.8 km</small></div>
+                <span class="wf-tag">Active</span>
+              </div>
+              <button type="button" class="wf-btn">Navigate in Maps</button>
+              <div class="wf-nav">
+                <span>Home</span><span class="active">Map</span><span>Visits</span><span>More</span>
+              </div>
+            </div>
+          </div>
+          <p class="phone-label">Map visualization</p>
+        </div>
+
+        <div>
+          <div class="phone" aria-label="Wireframe: Log visit proof">
+            <div class="phone-notch"><span></span></div>
+            <div class="phone-screen">
+              <div class="wf-header">
+                <span class="wf-title">Log visit</span>
+                <span style="color:#2563eb;font-weight:600">Save</span>
+              </div>
+              <div class="wf-card">
+                <strong>Agency</strong>
+                <small style="color:#64748b">Golden Route Agencies ▾</small>
+              </div>
+              <div class="wf-card wf-row">
+                <span>Type: <strong>Unplanned</strong></span>
+                <span>Purpose: <strong>Collection</strong></span>
+              </div>
+              <div class="wf-card">
+                <strong>Proof</strong>
+                <div class="wf-proof">
+                  <div class="wf-thumb">📷</div>
+                  <div class="wf-thumb" style="background:#e0f2fe">📍</div>
+                </div>
+                <div class="wf-verified">✓ Visit Verified (120m from office)</div>
+              </div>
+              <div class="wf-card">
+                <strong>Notes</strong>
+                <small style="color:#64748b">Discussed credit terms…</small>
+              </div>
+              <div class="wf-nav">
+                <span>Home</span><span>Map</span><span class="active">Visits</span><span>More</span>
+              </div>
+            </div>
+          </div>
+          <p class="phone-label">Visit + geo proof</p>
+        </div>
+
+        <div>
+          <div class="phone" aria-label="Wireframe: Expense submit">
+            <div class="phone-notch"><span></span></div>
+            <div class="phone-screen">
+              <div class="wf-header">
+                <span class="wf-title">New expense</span>
+                <span style="color:#2563eb;font-weight:600">Submit</span>
+              </div>
+              <div class="wf-card wf-row">
+                <span>₹ 1,240</span>
+                <span class="wf-tag">Travel</span>
+              </div>
+              <div class="wf-card">
+                <strong>Linked visit</strong>
+                <small style="color:#64748b">Skyline Tours · Apr 15</small>
+              </div>
+              <div class="wf-card">
+                <strong>Bill photo</strong>
+                <div class="wf-thumb" style="margin-top:6px">🧾</div>
+              </div>
+              <div class="wf-card">
+                <small style="color:#64748b">Auto timestamp · pending manager approval</small>
+              </div>
+              <div class="wf-nav">
+                <span>Home</span><span>Map</span><span>Visits</span><span class="active">More</span>
+              </div>
+            </div>
+          </div>
+          <p class="phone-label">Expense capture</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="admin">
+      <h2>7. Admin dashboard design (concept)</h2>
+      <p>Desktop-first layout: left nav, KPI strip, suspicious visits table, team performance. Uses dark theme to match ops consoles; export buttons for Excel/PDF land on report routes.</p>
+      <div class="admin-frame">
+        <div class="admin-top">
+          <strong>Head Office · Admin</strong>
+          <span style="color:var(--muted)">Wed, Apr 15, 2026 · IST</span>
+        </div>
+        <div class="admin-body">
+          <div class="admin-side">
+            <div class="on">Overview</div>
+            <div>Agencies</div>
+            <div>Visits</div>
+            <div>Expenses</div>
+            <div>Teams</div>
+            <div>Reports</div>
+            <div>Settings</div>
+          </div>
+          <div class="admin-main">
+            <div class="kpi-row">
+              <div class="kpi"><small>Visits today</small><b>186</b></div>
+              <div class="kpi"><small>Verified %</small><b>91%</b></div>
+              <div class="kpi"><small>Mismatch flags</small><b style="color:var(--warn)">14</b></div>
+              <div class="kpi"><small>Pending expenses</small><b>₹ 4.2L</b></div>
+            </div>
+            <h3 style="margin:0 0 8px;font-size:13px;color:var(--muted)">Suspicious / mismatch visits</h3>
+            <table class="admin-table">
+              <thead>
+                <tr><th>Executive</th><th>Agency</th><th>Distance</th><th>Accuracy</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>A. Khan</td><td>Royal Wings</td><td>1.2 km</td><td>12 m</td><td><span class="pill bad">Mismatch</span></td></tr>
+                <tr><td>S. Patel</td><td>Coastal Holidays</td><td>95 m</td><td>18 m</td><td><span class="pill ok">Verified</span></td></tr>
+                <tr><td>M. Das</td><td>— duplicate?</td><td>—</td><td>—</td><td><span class="pill" style="color:var(--warn)">Review</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="navigation">
+      <h2>8. Mobile app navigation flow</h2>
+      <p>Bottom nav (4 tabs) + contextual stacks. “More” holds Expenses, Targets, Notifications, Profile, Sync status.</p>
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+flowchart TB
+  Start([App launch]) --> Token{Valid session?}
+  Token -- No --> OTP[OTP screen]
+  OTP --> Home
+  Token -- Yes --> Home[Tab: Home]
+  Home --> Map[Tab: Map]
+  Home --> VisitFlow[Log Visit stack]
+  VisitFlow --> Camera[Selfie + GPS]
+  Camera --> Sync[Submit / queue]
+  Map --> AgencyDetail[Agency sheet]
+  AgencyDetail --> VisitFlow
+  Home --> List[Tab: Visits list]
+  List --> VisitDetail[Visit detail]
+  More[Tab: More] --> Exp[Expenses]
+  More --> Tgt[Targets]
+  More --> Prof[Profile / device]
+  Home --> More
+  Map --> More
+  List --> More
+        </pre>
+      </div>
+    </section>
+
+    <section id="offline">
+      <h2>9. Offline mode &amp; sync</h2>
+      <div class="card">
+        <h4>Envelope pattern</h4>
+        <p style="margin:0">Each offline action gets <code>client_id</code> (UUID), <code>created_at</code>, and payload. Sync POST returns per-item <code>accepted | conflict | duplicate</code>. Visits stay “pending verification” until media uploads complete. Conflict: server wins on agency assignment; client wins on draft notes if not yet reviewed.</p>
+      </div>
+    </section>
+
+    <section id="advanced">
+      <h2>10. Advanced modules (roadmap hooks)</h2>
+      <ul style="color:var(--muted); margin:0; padding-left:1.2rem;">
+        <li><strong>Lead scoring:</strong> rule engine + decay over inactivity; surfaces in agency list.</li>
+        <li><strong>Route optimization:</strong> TSP-lite daily route from planned pins (Maps Directions API).</li>
+        <li><strong>Territory mapping:</strong> manager draws regions; assignments auto-filter.</li>
+        <li><strong>Duplicate detection:</strong> normalized phone + fuzzy name match + geo clustering.</li>
+        <li><strong>AI insights:</strong> batch job flags inactive clients, suggests “next best action” push.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Single-file HTML prototype — open in any modern browser. Mermaid diagrams require network for the CDN script.
+  </footer>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      themeVariables: {
+        primaryColor: "#e0f2fe",
+        primaryTextColor: "#0f172a",
+        primaryBorderColor: "#3d9cf5",
+        lineColor: "#334155",
+        secondaryColor: "#f1f5f9",
+        tertiaryColor: "#fff"
+      },
+      flowchart: { curve: "basis" },
+      sequence: { actorMargin: 50 }
+    });
+  </script>
+</body>
+</html>

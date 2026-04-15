@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>FieldSales — Travel Agency CRM</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div class="app-frame" id="app">
+    <!-- OTP / passwordless -->
+    <section class="screen no-nav active" id="screen-login">
+      <div class="brand-block">
+        <div class="logo" aria-hidden="true">✈</div>
+        <h1>FieldSales</h1>
+        <p>Travel agency field CRM · OTP login</p>
+      </div>
+      <div class="screen-body" style="padding-top: 0">
+        <div class="field">
+          <label for="login-phone">Mobile number</label>
+          <input id="login-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="+91 98765 43210" />
+        </div>
+        <button type="button" class="btn btn-secondary" id="btn-send-otp">Send OTP</button>
+        <div id="otp-block" class="hidden" style="margin-top: 1rem">
+          <div class="field">
+            <label for="login-otp">One-time password</label>
+            <input id="login-otp" type="text" inputmode="numeric" maxlength="6" placeholder="6 digits" />
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-verify">Verify &amp; continue</button>
+        </div>
+        <p class="hint" id="login-hint">No password · demo uses SMS mock.</p>
+        <p class="hint">Tip: number ending in <strong>1</strong> → admin role. OTP: <strong>123456</strong></p>
+        <p class="link-row">
+          <a href="travel-sales-automation-platform.html">Architecture &amp; specs</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- Home -->
+    <section class="screen" id="screen-home">
+      <header class="screen-header">
+        <h1 id="home-greeting">Home</h1>
+        <button type="button" class="btn-icon" id="home-notif" aria-label="Notifications">🔔</button>
+      </header>
+      <div class="screen-body">
+        <div class="search">
+          <input type="search" placeholder="Search agencies…" readonly style="opacity: 0.85" title="Demo only" />
+        </div>
+        <div id="home-pulse"></div>
+        <h2 class="meta" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin: 1rem 0 0.5rem">Assigned agencies</h2>
+        <div id="home-agencies"></div>
+        <h2 class="meta" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin: 1rem 0 0.5rem">Follow-ups</h2>
+        <div id="home-followups"></div>
+      </div>
+    </section>
+
+    <!-- Map -->
+    <section class="screen" id="screen-map">
+      <header class="screen-header">
+        <button type="button" class="btn-icon" id="map-back" aria-label="Back">←</button>
+        <h1>Map</h1>
+        <span style="width: 40px"></span>
+      </header>
+      <div class="screen-body">
+        <div id="map" role="application" aria-label="Agencies map"></div>
+        <div id="map-selected" class="map-legend"></div>
+      </div>
+    </section>
+
+    <!-- Visits list -->
+    <section class="screen" id="screen-visits">
+      <header class="screen-header">
+        <h1>Visits</h1>
+      </header>
+      <div class="screen-body" id="visits-list"></div>
+    </section>
+
+    <!-- Log visit wizard -->
+    <section class="screen no-nav" id="screen-visit-new">
+      <header class="screen-header">
+        <button type="button" class="btn-icon" id="vn-close" aria-label="Close">✕</button>
+        <h1>Log visit</h1>
+        <span style="width: 40px"></span>
+      </header>
+      <div class="screen-body">
+        <div class="steps" aria-hidden="true">
+          <div class="step-dot on"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+        </div>
+
+        <div class="wizard-step" data-step="1">
+          <div class="field">
+            <label for="vn-agency">Agency</label>
+            <select id="vn-agency"></select>
+          </div>
+          <div class="field">
+            <label for="vn-type">Visit type</label>
+            <select id="vn-type">
+              <option value="scheduled">Scheduled</option>
+              <option value="unplanned" selected>Unplanned</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="vn-purpose">Purpose</label>
+            <select id="vn-purpose">
+              <option value="onboarding">Onboarding</option>
+              <option value="follow-up" selected>Follow-up</option>
+              <option value="collection">Collection</option>
+              <option value="demo">Demo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="wizard-step hidden" data-step="2">
+          <p class="meta">Mandatory proof: GPS + selfie (demo file picker).</p>
+          <div class="field">
+            <label for="vn-selfie">Selfie / proof photo</label>
+            <input id="vn-selfie" type="file" accept="image/*" capture="environment" />
+          </div>
+          <div class="proof-preview" id="proof-preview-img">Tap to choose photo</div>
+          <button type="button" class="btn btn-secondary" id="btn-capture-geo">Capture GPS location</button>
+          <button type="button" class="btn btn-ghost" id="btn-simulate-agency" style="margin-top: 0.5rem">Simulate at agency (demo)</button>
+          <div id="geo-status" class="geo-banner pending">Capture location to verify.</div>
+        </div>
+
+        <div class="wizard-step hidden" data-step="3">
+          <div class="field">
+            <label for="vn-notes">Meeting notes</label>
+            <textarea id="vn-notes" placeholder="Discussion summary…"></textarea>
+          </div>
+          <div class="field">
+            <label for="vn-persons">Persons met</label>
+            <input id="vn-persons" type="text" placeholder="Names, comma-separated" />
+          </div>
+          <div class="field">
+            <label for="vn-followup">Next follow-up (optional)</label>
+            <input id="vn-followup" type="date" />
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem">
+          <button type="button" class="btn btn-secondary hidden" id="vn-back" style="flex: 1">Back</button>
+          <button type="button" class="btn btn-primary" id="vn-next" style="flex: 2">Continue</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visit detail -->
+    <section class="screen no-nav" id="screen-visit-detail">
+      <header class="screen-header">
+        <button type="button" class="btn-icon" id="vd-back" aria-label="Back">←</button>
+        <h1>Visit detail</h1>
+        <span style="width: 40px"></span>
+      </header>
+      <div class="screen-body" id="visit-detail-body"></div>
+    </section>
+
+    <!-- More -->
+    <section class="screen" id="screen-more">
+      <header class="screen-header">
+        <h1>More</h1>
+      </header>
+      <div class="screen-body">
+        <div class="card">
+          <p class="meta" style="margin: 0 0 0.25rem">Signed in</p>
+          <strong id="more-profile">—</strong>
+          <p class="meta" id="more-role">—</p>
+        </div>
+        <ul class="menu-list">
+          <li><button type="button" id="more-expenses">Expenses <span class="meta">›</span></button></li>
+          <li><button type="button" id="more-offline">Offline &amp; sync <span class="meta">›</span></button></li>
+          <li><button type="button" class="hidden" id="more-admin">Admin dashboard <span class="meta">›</span></button></li>
+        </ul>
+        <p class="hint" style="margin-top: 1.5rem">Targets &amp; KPIs would live here in production.</p>
+        <button type="button" class="btn btn-secondary" id="btn-logout" style="margin-top: 1rem">Sign out</button>
+      </div>
+    </section>
+
+    <!-- Expenses -->
+    <section class="screen no-nav" id="screen-expenses">
+      <header class="screen-header">
+        <button type="button" class="btn-icon" id="exp-back" aria-label="Back">←</button>
+        <h1>Expenses</h1>
+        <button type="button" class="btn-icon" id="exp-add" aria-label="Add expense">＋</button>
+      </header>
+      <div class="screen-body" id="expenses-list"></div>
+    </section>
+
+    <section class="screen no-nav" id="screen-expense-new">
+      <header class="screen-header">
+        <button type="button" class="btn-icon" id="en-cancel" aria-label="Cancel">✕</button>
+        <h1>New expense</h1>
+        <span style="width: 40px"></span>
+      </header>
+      <div class="screen-body">
+        <div class="field">
+          <label for="en-amount">Amount (₹)</label>
+          <input id="en-amount" type="number" min="1" step="1" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="en-cat">Category</label>
+          <select id="en-cat">
+            <option value="travel">Travel</option>
+            <option value="food">Food</option>
+            <option value="stay">Accommodation</option>
+            <option value="misc">Miscellaneous</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="en-visit">Link visit (optional)</label>
+          <select id="en-visit"></select>
+        </div>
+        <p class="meta">Bill photo upload can be added the same way as visit selfie.</p>
+        <button type="button" class="btn btn-primary" id="en-save" style="margin-top: 1rem">Submit for approval</button>
+      </div>
+    </section>
+
+    <!-- Admin -->
+    <section class="screen no-nav" id="screen-admin">
+      <header class="screen-header">
+        <button type="button" class="btn-icon" id="adm-back" aria-label="Back">←</button>
+        <h1>Admin dashboard</h1>
+        <span style="width: 40px"></span>
+      </header>
+      <div class="screen-body">
+        <div class="card">
+          <div class="field" style="margin-bottom: 0.6rem">
+            <label for="adm-filter-status">Visit filter</label>
+            <select id="adm-filter-status">
+              <option value="all">All visits</option>
+              <option value="mismatch">Mismatch only</option>
+              <option value="verified">Verified only</option>
+              <option value="pending">Pending only</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom: 0">
+            <label for="adm-filter-window">Time range</label>
+            <select id="adm-filter-window">
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="0">All time</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi"><span>Total visits</span><b id="adm-kpi-visits">0</b></div>
+          <div class="kpi"><span>Verified rate</span><b id="adm-kpi-ver">—</b></div>
+          <div class="kpi"><span>Mismatch flags</span><b id="adm-kpi-bad" style="color: var(--warn)">0</b></div>
+          <div class="kpi"><span>Pending expenses</span><b id="adm-kpi-expenses">0</b></div>
+        </div>
+
+        <h2 class="meta adm-title">Suspicious visits</h2>
+        <div id="adm-suspicious"></div>
+
+        <h2 class="meta adm-title">Visit verification log</h2>
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Agency</th>
+                <th>Δ</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="adm-tbody"></tbody>
+          </table>
+        </div>
+
+        <h2 class="meta adm-title">Team leaderboard</h2>
+        <div id="adm-leaderboard"></div>
+
+        <h2 class="meta adm-title">Expense approvals</h2>
+        <div id="adm-expense-review"></div>
+      </div>
+    </section>
+
+    <nav class="bottom-nav hidden" id="bottom-nav" aria-label="Main">
+      <button type="button" data-tab="home"><span class="ic">⌂</span>Home</button>
+      <button type="button" data-tab="map"><span class="ic">◎</span>Map</button>
+      <button type="button" data-tab="visits"><span class="ic">☰</span>Visits</button>
+      <button type="button" data-tab="more"><span class="ic">⋯</span>More</button>
+    </nav>
+
+    <div class="fab-wrap hidden" id="fab-wrap">
+      <button type="button" class="btn btn-primary" id="fab-log-visit">＋ Log visit</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
